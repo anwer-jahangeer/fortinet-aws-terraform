@@ -1,0 +1,121 @@
+variable "aws_region" {
+  description = "AWS region in which to deploy the lab."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "availability_zone" {
+  description = "Availability Zone for all lab subnets and instances."
+  type        = string
+  default     = "us-east-1a"
+}
+
+variable "name_prefix" {
+  description = "Prefix applied to every AWS resource."
+  type        = string
+  default     = "forti"
+}
+
+variable "tags" {
+  description = "Tags applied to all taggable resources."
+  type        = map(string)
+  default = {
+    Environment = "test"
+    Lab         = "fortigate-sdwan"
+    ManagedBy   = "terraform"
+  }
+}
+
+variable "vpc_cidr" {
+  description = "CIDR for the AWS lab VPC. All FortiGate ENIs must be in one VPC."
+  type        = string
+  default     = "10.10.0.0/16"
+}
+
+variable "subnet_cidrs" {
+  description = "Subnet address plan for management, site LANs, WAN underlays, and MPLS."
+  type        = map(string)
+  default = {
+    management   = "10.10.252.0/24"
+    hub1_lan     = "10.10.20.0/24"
+    hub2_lan     = "10.10.30.0/24"
+    branch1_lan  = "10.10.10.0/24"
+    hub1_wan2    = "10.10.101.0/24"
+    hub2_wan2    = "10.10.102.0/24"
+    branch1_wan2 = "10.10.103.0/24"
+    mpls         = "10.10.200.0/24"
+  }
+
+  validation {
+    condition     = length(var.subnet_cidrs) == 8
+    error_message = "subnet_cidrs must define management, hub1_lan, hub2_lan, branch1_lan, hub1_wan2, hub2_wan2, branch1_wan2, and mpls."
+  }
+}
+
+variable "admin_ingress_cidrs" {
+  description = "Trusted public CIDRs allowed to administer FortiGate, FMG, FAZ, and the jumpbox. Replace the lab default with your public IP/32."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "wan_ingress_cidrs" {
+  description = "Peer public CIDRs allowed to reach FortiGate WAN interfaces for IPsec and ICMP."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "admin_username" {
+  description = "FortiGate administrator configured by the bootstrap configuration."
+  type        = string
+  default     = "admin"
+}
+
+variable "admin_password" {
+  description = "FortiGate administrator password for this isolated lab. Supply it through the ignored terraform.tfvars file."
+  type        = string
+  sensitive   = true
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key used to create the EC2 key pair."
+  type        = string
+}
+
+variable "fortigate_ami_id" {
+  description = "Subscribed FortiGate BYOL Marketplace AMI ID for aws_region."
+  type        = string
+}
+
+variable "fortimanager_ami_id" {
+  description = "Subscribed FortiManager BYOL Marketplace AMI ID for aws_region."
+  type        = string
+}
+
+variable "fortianalyzer_ami_id" {
+  description = "Subscribed FortiAnalyzer BYOL Marketplace AMI ID for aws_region."
+  type        = string
+}
+
+variable "fortigate_instance_type" {
+  description = "EC2 instance type for each four-interface FortiGate."
+  type        = string
+  default     = "c5.2xlarge"
+}
+
+variable "fortimgmt_instance_type" {
+  description = "EC2 instance type for FortiManager and FortiAnalyzer."
+  type        = string
+  default     = "m5.2xlarge"
+}
+
+variable "jumpbox_instance_type" {
+  description = "EC2 instance type for the Windows management jumpbox."
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "inside_instance_type" {
+  description = "EC2 instance type for Linux traffic-generation hosts."
+  type        = string
+  default     = "t3.small"
+}

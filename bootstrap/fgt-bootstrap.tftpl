@@ -1,0 +1,32 @@
+config system global
+    set hostname "${hostname}"
+    set admintimeout 480
+end
+config system admin
+    edit "${admin_username}"
+        set password "${admin_password}"
+        set accprofile "super_admin"
+    next
+end
+config system interface
+    edit "port1"
+        set mode dhcp
+        set allowaccess ping https ssh http fgfm
+        set description "management-isp1"
+    next
+    edit "port2"
+        set mode dhcp
+        set allowaccess ping
+        set description "lan"
+    next
+    edit "port3"
+        set mode dhcp
+        set allowaccess ping
+        set description "isp2-wan"
+    next
+    edit "port4"
+        set mode dhcp
+        set allowaccess ping
+        set description "mpls"
+    next
+end
