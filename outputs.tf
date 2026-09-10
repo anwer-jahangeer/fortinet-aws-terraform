@@ -30,34 +30,22 @@ output "fortigate_public_ips" {
   }
 }
 
-output "management_public_ips" {
-  description = "Public addresses for FortiManager, FortiAnalyzer, and the Windows jumpbox."
-  value       = { for name, eip in aws_eip.management : name => eip.public_ip }
+output "jumpbox_public_ip" {
+  description = "Public address for the Windows jumpbox."
+  value       = aws_eip.jumpbox.public_ip
 }
 
-output "management_private_ips" {
-  description = "Private management addresses."
-  value = {
-    fortimanager  = aws_instance.fortimanager.private_ip
-    fortianalyzer = aws_instance.fortianalyzer.private_ip
-    jumpbox       = aws_instance.jumpbox.private_ip
-  }
+output "jumpbox_private_ip" {
+  description = "Private management address for the Windows jumpbox."
+  value       = aws_instance.jumpbox.private_ip
 }
 
 output "fortinet_initial_logins" {
-  description = "Initial appliance login details. Change FMG/FAZ to the lab password after first login."
+  description = "Initial FortiGate login details."
   value = {
     fortigates = {
       username = var.admin_username
       password = var.admin_password
-    }
-    fortimanager = {
-      username = "admin"
-      password = aws_instance.fortimanager.id
-    }
-    fortianalyzer = {
-      username = "admin"
-      password = aws_instance.fortianalyzer.id
     }
   }
   sensitive = true

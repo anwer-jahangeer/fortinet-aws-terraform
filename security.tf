@@ -20,14 +20,6 @@ resource "aws_security_group" "fortigate_management" {
   }
 
   ingress {
-    description = "FortiManager device management"
-    protocol    = "tcp"
-    from_port   = 541
-    to_port     = 541
-    cidr_blocks = [var.subnet_cidrs["management"]]
-  }
-
-  ingress {
     description = "IKE and IPsec NAT traversal"
     protocol    = "udp"
     from_port   = 500
@@ -147,7 +139,7 @@ resource "aws_security_group" "fortigate_internal" {
 
 resource "aws_security_group" "management" {
   name_prefix = "${var.name_prefix}-management-"
-  description = "FortiManager, FortiAnalyzer, and Windows jumpbox"
+  description = "Windows management jumpbox"
   vpc_id      = aws_vpc.lab.id
 
   ingress {

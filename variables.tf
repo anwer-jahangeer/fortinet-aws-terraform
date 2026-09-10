@@ -86,26 +86,10 @@ variable "fortigate_ami_id" {
   type        = string
 }
 
-variable "fortimanager_ami_id" {
-  description = "Subscribed FortiManager BYOL Marketplace AMI ID for aws_region."
-  type        = string
-}
-
-variable "fortianalyzer_ami_id" {
-  description = "Subscribed FortiAnalyzer BYOL Marketplace AMI ID for aws_region."
-  type        = string
-}
-
 variable "fortigate_instance_type" {
   description = "EC2 instance type for each four-interface FortiGate."
   type        = string
   default     = "c5.2xlarge"
-}
-
-variable "fortimgmt_instance_type" {
-  description = "EC2 instance type for FortiManager and FortiAnalyzer."
-  type        = string
-  default     = "m5.2xlarge"
 }
 
 variable "jumpbox_instance_type" {

@@ -6,13 +6,9 @@ admin_ingress_cidrs = ["203.0.113.10/32"]
 wan_ingress_cidrs   = ["0.0.0.0/0"]
 
 # FortiGate lab username defaults to admin. Set the lab password locally.
-# FortiManager and FortiAnalyzer initially require admin / <EC2 instance ID>;
-# change both to your chosen lab password after their first login.
 admin_password = "REPLACE_ME"
 ssh_public_key = "ssh-rsa REPLACE_ME"
 
-# Accept each Fortinet Marketplace subscription, then copy the AMI IDs for the
-# selected region. Keep FortiManager/FortiAnalyzer at or above FortiGate version.
-fortigate_ami_id    = "ami-REPLACE_ME"
-fortimanager_ami_id = "ami-REPLACE_ME"
-fortianalyzer_ami_id = "ami-REPLACE_ME"
+# Accept the FortiGate BYOL Marketplace subscription, then copy its AMI ID for
+# the selected region.
+fortigate_ami_id = "ami-REPLACE_ME"
