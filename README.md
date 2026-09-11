@@ -144,6 +144,29 @@ router, a Windows host, three Linux hosts, and seven Elastic IPs. Review current
 regional pricing, vCPU quota, ENI limits, and Elastic IP charges before
 deployment.
 
+## Partial-apply recovery
+
+EIP allocation and association are separate resources so preserved allocations
+can be cleanly disassociated from replaced instances and reassociated with
+Debian. If an earlier interrupted apply created an ENI without recording it in
+state, locate it by its fixed address and import it before applying again:
+
+```bash
+aws ec2 describe-network-interfaces \
+  --region us-east-2 \
+  --filters Name=addresses.private-ip-address,Values=10.10.252.32 \
+  --query 'NetworkInterfaces[*].{ID:NetworkInterfaceId,Status:Status,Instance:Attachment.InstanceId,Name:TagSet[?Key==`Name`]|[0].Value}' \
+  --output table
+
+terraform import \
+  'aws_network_interface.inside_management["hub2"]' \
+  eni-REPLACE_WITH_RESULT
+```
+
+Import only when the returned ENI is the expected
+`forti-hub2-inside-management` interface. If it belongs to another resource,
+resolve that address conflict rather than importing it.
+
 ```bash
 terraform destroy
 ```

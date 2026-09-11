@@ -26,12 +26,17 @@ resource "aws_instance" "jumpbox" {
 }
 
 resource "aws_eip" "jumpbox" {
-  domain            = "vpc"
-  network_interface = aws_instance.jumpbox.primary_network_interface_id
+  domain = "vpc"
 
   depends_on = [aws_internet_gateway.lab]
 
   tags = {
     Name = "${var.name_prefix}-jumpbox-eip"
   }
+}
+
+resource "aws_eip_association" "jumpbox" {
+  allocation_id        = aws_eip.jumpbox.id
+  network_interface_id = aws_instance.jumpbox.primary_network_interface_id
+  allow_reassociation  = true
 }

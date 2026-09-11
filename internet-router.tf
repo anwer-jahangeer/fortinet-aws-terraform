@@ -52,9 +52,7 @@ resource "aws_network_interface" "internet_router_inside" {
 resource "aws_eip" "internet_router" {
   for_each = local.internet_circuits
 
-  domain                    = "vpc"
-  network_interface         = aws_network_interface.internet_router_outside.id
-  associate_with_private_ip = each.value.outside_private_ip
+  domain = "vpc"
 
   depends_on = [aws_internet_gateway.lab]
 
@@ -63,6 +61,15 @@ resource "aws_eip" "internet_router" {
     Site      = each.value.site
     Transport = each.value.transport
   }
+}
+
+resource "aws_eip_association" "internet_router" {
+  for_each = local.internet_circuits
+
+  allocation_id        = aws_eip.internet_router[each.key].id
+  network_interface_id = aws_network_interface.internet_router_outside.id
+  private_ip_address   = each.value.outside_private_ip
+  allow_reassociation  = true
 }
 
 resource "aws_instance" "internet_router" {
@@ -104,6 +111,8 @@ resource "aws_instance" "internet_router" {
     volume_size = 16
     encrypted   = true
   }
+
+  depends_on = [aws_eip_association.internet_router]
 
   tags = {
     Name = "${var.name_prefix}-debian-internet-router"
