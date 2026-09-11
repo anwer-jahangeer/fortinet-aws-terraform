@@ -137,6 +137,19 @@ sysctl net.ipv4.ip_forward
 Configure the FortiGate hub-and-spoke SD-WAN overlay directly on the three
 FortiGates: port1 and port3 are internet underlays, and port4 is MPLS.
 
+## FortiManager interface provisioning
+
+The `fortimanager` directory contains one reusable FortiManager 7.6 Jinja CLI
+template and the exact per-device metadata values:
+
+- `fortimanager/aws-interface-template.j2`
+- `fortimanager/device-metadata.csv`
+- `fortimanager/README.md`
+
+The template configures all four interfaces, ISP1 primary routing, ISP2 backup
+routing, and a dedicated jumpbox management route. Preview and install it on
+Branch1 first before assigning it to both hubs.
+
 ## Cost and cleanup
 
 The default stack runs three `c5.2xlarge` FortiGates, one `c5.4xlarge` Debian
