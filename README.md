@@ -31,6 +31,18 @@ Each FortiGate has four ENIs in FortiOS order:
 | port3 | site ISP2 | Second internet path, with Elastic IP |
 | port4 | MPLS | Shared private underlay |
 
+Each Ubuntu test VM has two ENIs:
+
+| VM | Primary LAN address | Secondary management address |
+|---|---:|---:|
+| hub1 inside | `10.10.20.6` | `10.10.252.31` |
+| hub2 inside | `10.10.30.6` | `10.10.252.32` |
+| branch1 inside | `10.10.10.6` | `10.10.252.33` |
+
+The LAN ENI remains the primary interface so application and SD-WAN test
+traffic follows the local FortiGate. Use the secondary management address to
+SSH directly from the Windows jumpbox without crossing a FortiGate.
+
 Source/destination checks are disabled on all FortiGate ENIs. Each LAN route
 table sends `0.0.0.0/0` to its local FortiGate port2 ENI. Management and ISP2
 subnets use the Internet Gateway; MPLS has no internet default route.
@@ -72,6 +84,8 @@ credential. The Windows jumpbox uses its AWS-generated administrator password.
 After deployment, use `terraform output fortigate_public_ips` for the ISP1/ISP2
 tunnel endpoints and `terraform output jumpbox_public_ip` for the jumpbox.
 Retrieve the Windows password with the emitted `windows_password_command`.
+Run `terraform output inside_host_private_ips` for both LAN and management
+addresses of the Ubuntu test hosts.
 Configure the FortiGate hub-and-spoke SD-WAN overlay directly on the three
 FortiGates: port1 and port3 are internet underlays, and port4 is MPLS.
 

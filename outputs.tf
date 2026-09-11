@@ -52,8 +52,13 @@ output "fortinet_initial_logins" {
 }
 
 output "inside_host_private_ips" {
-  description = "Linux test-host addresses behind each FortiGate."
-  value       = { for site, instance in aws_instance.inside : site => instance.private_ip }
+  description = "LAN and management addresses for Linux test hosts behind each FortiGate."
+  value = {
+    for site, config in local.sites : site => {
+      lan        = config.inside_ip
+      management = config.inside_mgmt_ip
+    }
+  }
 }
 
 output "windows_password_command" {

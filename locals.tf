@@ -1,31 +1,34 @@
 locals {
   sites = {
     hub1 = {
-      lan_subnet = "hub1_lan"
-      wan_subnet = "hub1_wan2"
-      mgmt_ip    = "10.10.252.21"
-      lan_ip     = "10.10.20.20"
-      wan_ip     = "10.10.101.21"
-      mpls_ip    = "10.10.200.21"
-      inside_ip  = "10.10.20.6"
+      lan_subnet     = "hub1_lan"
+      wan_subnet     = "hub1_wan2"
+      mgmt_ip        = "10.10.252.21"
+      lan_ip         = "10.10.20.20"
+      wan_ip         = "10.10.101.21"
+      mpls_ip        = "10.10.200.21"
+      inside_ip      = "10.10.20.6"
+      inside_mgmt_ip = "10.10.252.31"
     }
     hub2 = {
-      lan_subnet = "hub2_lan"
-      wan_subnet = "hub2_wan2"
-      mgmt_ip    = "10.10.252.22"
-      lan_ip     = "10.10.30.20"
-      wan_ip     = "10.10.102.21"
-      mpls_ip    = "10.10.200.22"
-      inside_ip  = "10.10.30.6"
+      lan_subnet     = "hub2_lan"
+      wan_subnet     = "hub2_wan2"
+      mgmt_ip        = "10.10.252.22"
+      lan_ip         = "10.10.30.20"
+      wan_ip         = "10.10.102.21"
+      mpls_ip        = "10.10.200.22"
+      inside_ip      = "10.10.30.6"
+      inside_mgmt_ip = "10.10.252.32"
     }
     branch1 = {
-      lan_subnet = "branch1_lan"
-      wan_subnet = "branch1_wan2"
-      mgmt_ip    = "10.10.252.23"
-      lan_ip     = "10.10.10.20"
-      wan_ip     = "10.10.103.21"
-      mpls_ip    = "10.10.200.23"
-      inside_ip  = "10.10.10.6"
+      lan_subnet     = "branch1_lan"
+      wan_subnet     = "branch1_wan2"
+      mgmt_ip        = "10.10.252.23"
+      lan_ip         = "10.10.10.20"
+      wan_ip         = "10.10.103.21"
+      mpls_ip        = "10.10.200.23"
+      inside_ip      = "10.10.10.6"
+      inside_mgmt_ip = "10.10.252.33"
     }
   }
 
