@@ -30,3 +30,12 @@ config system interface
         set description "mpls"
     next
 end
+config router static
+    edit 100
+        set dst ${management_cidr}
+        set gateway ${port1_gateway}
+        set device "port1"
+        set distance 5
+        set comment "private-management-via-aws-vpc"
+    next
+end

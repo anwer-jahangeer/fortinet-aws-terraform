@@ -1,7 +1,7 @@
 resource "aws_network_interface" "fgt_management" {
   for_each = local.sites
 
-  subnet_id         = aws_subnet.this["management"].id
+  subnet_id         = aws_subnet.this[each.value.isp1_subnet].id
   private_ips       = [each.value.mgmt_ip]
   security_groups   = [aws_security_group.fortigate_management.id]
   source_dest_check = false
@@ -57,9 +57,11 @@ resource "aws_instance" "fortigate" {
   instance_type = var.fortigate_instance_type
   key_name      = aws_key_pair.lab.key_name
   user_data = templatefile("${path.module}/bootstrap/fgt-bootstrap.tftpl", {
-    hostname       = "${var.name_prefix}-${each.key}-fgt"
-    admin_username = var.admin_username
-    admin_password = var.admin_password
+    hostname        = "${var.name_prefix}-${each.key}-fgt"
+    admin_username  = var.admin_username
+    admin_password  = var.admin_password
+    management_cidr = var.subnet_cidrs["management"]
+    port1_gateway   = cidrhost(var.subnet_cidrs[each.value.isp1_subnet], 1)
   })
   user_data_replace_on_change = true
 
@@ -83,39 +85,14 @@ resource "aws_instance" "fortigate" {
     device_index         = 3
   }
 
+  depends_on = [
+    aws_instance.internet_router,
+    aws_route.isp_default_to_debian,
+  ]
+
   tags = {
     Name = "${var.name_prefix}-${each.key}-fgt"
     Role = "fortigate"
     Site = each.key
-  }
-}
-
-resource "aws_eip" "fortigate_isp1" {
-  for_each = local.sites
-
-  domain                    = "vpc"
-  network_interface         = aws_network_interface.fgt_management[each.key].id
-  associate_with_private_ip = each.value.mgmt_ip
-
-  depends_on = [aws_internet_gateway.lab]
-
-  tags = {
-    Name      = "${var.name_prefix}-${each.key}-isp1-eip"
-    Transport = "isp1"
-  }
-}
-
-resource "aws_eip" "fortigate_isp2" {
-  for_each = local.sites
-
-  domain                    = "vpc"
-  network_interface         = aws_network_interface.fgt_wan[each.key].id
-  associate_with_private_ip = each.value.wan_ip
-
-  depends_on = [aws_internet_gateway.lab]
-
-  tags = {
-    Name      = "${var.name_prefix}-${each.key}-isp2-eip"
-    Transport = "isp2"
   }
 }

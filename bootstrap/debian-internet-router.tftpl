@@ -1,0 +1,137 @@
+#!/bin/bash
+set -euxo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y nftables conntrack iproute2
+
+cat >/etc/sysctl.d/99-fortinet-router.conf <<'SYSCTL'
+net.ipv4.ip_forward=1
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+SYSCTL
+
+sysctl --system
+
+cat >/usr/local/sbin/configure-fortinet-router <<'ROUTER'
+#!/bin/bash
+set -euo pipefail
+
+find_interface() {
+    local mac=$1
+    ip -o link show | awk -v mac="$mac" 'tolower($0) ~ tolower(mac) {gsub(/:/, "", $2); print $2; exit}'
+}
+
+configure_address() {
+    local mac=$1
+    local address=$2
+    local interface
+    interface=$(find_interface "$mac")
+
+    if [ -z "$interface" ]; then
+        echo "Unable to find interface with MAC $mac" >&2
+        exit 1
+    fi
+
+    ip link set dev "$interface" up
+    ip address replace "$address/24" dev "$interface"
+    sysctl -w "net.ipv4.conf.$interface.rp_filter=0" >/dev/null
+    printf '%s' "$interface"
+}
+
+outside_interface=$(configure_address "${outside_mac}" "${outside_private_ips[0]}")
+%{ for address in slice(outside_private_ips, 1, length(outside_private_ips)) ~}
+ip address replace "${address}/24" dev "$outside_interface"
+%{ endfor ~}
+%{ for name, circuit in circuits ~}
+configure_address "${circuit.inside_mac}" "${circuit.router_ip}" >/dev/null
+%{ endfor ~}
+
+ip route replace default via "${outside_gateway}" dev "$outside_interface"
+nft -f /etc/nftables.conf
+ROUTER
+
+chmod 0755 /usr/local/sbin/configure-fortinet-router
+
+cat >/etc/nftables.conf <<'NFTABLES'
+flush ruleset
+
+table inet filter {
+    set wan_clients {
+        type ipv4_addr
+        elements = { %{ for index, circuit in values(circuits) ~}${circuit.fortigate_ip}%{ if index < length(circuits) - 1 }, %{ endif }%{ endfor ~} }
+    }
+
+    set allowed_wan_sources {
+        type ipv4_addr
+        flags interval
+        elements = { %{ for index, cidr in allowed_wan_sources ~}${cidr}%{ if index < length(allowed_wan_sources) - 1 }, %{ endif }%{ endfor ~} }
+    }
+
+    chain input {
+        type filter hook input priority filter
+        policy drop
+
+        iifname "lo" accept
+        ct state established,related accept
+        ip saddr ${vpc_cidr} accept
+        ip saddr @allowed_wan_sources udp dport { 500, 4500 } accept
+        ip saddr @allowed_wan_sources ip protocol esp accept
+        ip saddr @allowed_wan_sources icmp type echo-request accept
+    }
+
+    chain forward {
+        type filter hook forward priority filter
+        policy drop
+
+        ct state established,related accept
+        ct status dnat ip saddr @allowed_wan_sources accept
+        ct status dnat ip saddr @wan_clients accept
+        ip saddr @wan_clients ip daddr != ${vpc_cidr} accept
+    }
+}
+
+table ip nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat
+        policy accept
+
+%{ for name, circuit in circuits ~}
+        ip daddr { ${circuit.outside_private_ip}, ${circuit.public_ip} } udp dport { 500, 4500 } dnat to ${circuit.fortigate_ip}
+        ip daddr { ${circuit.outside_private_ip}, ${circuit.public_ip} } ip protocol esp dnat to ${circuit.fortigate_ip}
+        ip daddr { ${circuit.outside_private_ip}, ${circuit.public_ip} } icmp type echo-request dnat to ${circuit.fortigate_ip}
+%{ endfor ~}
+    }
+
+    chain postrouting {
+        type nat hook postrouting priority srcnat
+        policy accept
+
+%{ for name, circuit in circuits ~}
+        ct status dnat ip saddr ${circuit.fortigate_ip} snat to ${circuit.public_ip}
+%{ endfor ~}
+%{ for name, circuit in circuits ~}
+        ip saddr ${circuit.fortigate_ip} snat to ${circuit.outside_private_ip}
+%{ endfor ~}
+    }
+}
+NFTABLES
+
+cat >/etc/systemd/system/fortinet-internet-router.service <<'UNIT'
+[Unit]
+Description=Configure Fortinet lab internet routing and NAT
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/configure-fortinet-router
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable fortinet-internet-router.service nftables.service
+systemctl restart fortinet-internet-router.service

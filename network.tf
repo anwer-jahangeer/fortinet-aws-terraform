@@ -50,6 +50,45 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+resource "aws_route_table" "isp" {
+  for_each = local.internet_circuits
+
+  vpc_id = aws_vpc.lab.id
+
+  tags = {
+    Name      = "${var.name_prefix}-${replace(each.key, "_", "-")}"
+    Site      = each.value.site
+    Transport = each.value.transport
+  }
+}
+
+resource "aws_route_table_association" "isp" {
+  for_each = local.internet_circuits
+
+  subnet_id      = aws_subnet.this[each.value.subnet].id
+  route_table_id = aws_route_table.isp[each.key].id
+}
+
+resource "aws_route" "isp_default_to_debian" {
+  for_each = local.internet_circuits
+
+  route_table_id         = aws_route_table.isp[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  network_interface_id   = aws_network_interface.internet_router_inside[each.key].id
+
+  depends_on = [aws_instance.internet_router]
+}
+
+resource "aws_route" "isp_isolation_to_debian" {
+  for_each = local.isp_isolation_routes
+
+  route_table_id         = aws_route_table.isp[each.value.source_circuit].id
+  destination_cidr_block = each.value.destination_cidr
+  network_interface_id   = aws_network_interface.internet_router_inside[each.value.source_circuit].id
+
+  depends_on = [aws_instance.internet_router]
+}
+
 resource "aws_route_table" "mpls" {
   vpc_id = aws_vpc.lab.id
 

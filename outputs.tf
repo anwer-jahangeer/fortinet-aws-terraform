@@ -21,11 +21,28 @@ output "fortigate_private_ips" {
 }
 
 output "fortigate_public_ips" {
-  description = "Static public IPs for both internet transports at each FortiGate site."
+  description = "Public IP identities hosted by Debian and NATed to each FortiGate WAN interface."
   value = {
     for site in keys(local.sites) : site => {
-      isp1 = aws_eip.fortigate_isp1[site].public_ip
-      isp2 = aws_eip.fortigate_isp2[site].public_ip
+      isp1 = aws_eip.internet_router["${site}_isp1"].public_ip
+      isp2 = aws_eip.internet_router["${site}_isp2"].public_ip
+    }
+  }
+}
+
+output "internet_router" {
+  description = "Debian virtual internet gateway access and circuit mappings."
+  value = {
+    instance_id   = aws_instance.internet_router.id
+    management_ip = local.internet_router_outside_ips[0]
+    ssh_username  = "admin"
+    circuit_mappings = {
+      for name, circuit in local.internet_circuits : name => {
+        fortigate_private_ip = circuit.fortigate_ip
+        router_inside_ip     = circuit.router_ip
+        router_outside_ip    = circuit.outside_private_ip
+        public_ip            = aws_eip.internet_router[name].public_ip
+      }
     }
   }
 }

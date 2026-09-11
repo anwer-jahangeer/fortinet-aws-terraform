@@ -8,7 +8,7 @@ resource "aws_security_group" "fortigate_management" {
     protocol    = "tcp"
     from_port   = 443
     to_port     = 443
-    cidr_blocks = var.admin_ingress_cidrs
+    cidr_blocks = [var.subnet_cidrs["management"]]
   }
 
   ingress {
@@ -16,7 +16,7 @@ resource "aws_security_group" "fortigate_management" {
     protocol    = "tcp"
     from_port   = 22
     to_port     = 22
-    cidr_blocks = var.admin_ingress_cidrs
+    cidr_blocks = [var.subnet_cidrs["management"]]
   }
 
   ingress {
@@ -24,7 +24,7 @@ resource "aws_security_group" "fortigate_management" {
     protocol    = "udp"
     from_port   = 500
     to_port     = 500
-    cidr_blocks = var.wan_ingress_cidrs
+    cidr_blocks = local.fortigate_wan_source_cidrs
   }
 
   ingress {
@@ -32,7 +32,7 @@ resource "aws_security_group" "fortigate_management" {
     protocol    = "udp"
     from_port   = 4500
     to_port     = 4500
-    cidr_blocks = var.wan_ingress_cidrs
+    cidr_blocks = local.fortigate_wan_source_cidrs
   }
 
   ingress {
@@ -40,7 +40,7 @@ resource "aws_security_group" "fortigate_management" {
     protocol    = "50"
     from_port   = 0
     to_port     = 0
-    cidr_blocks = var.wan_ingress_cidrs
+    cidr_blocks = local.fortigate_wan_source_cidrs
   }
 
   ingress {
@@ -48,7 +48,7 @@ resource "aws_security_group" "fortigate_management" {
     protocol    = "icmp"
     from_port   = -1
     to_port     = -1
-    cidr_blocks = var.wan_ingress_cidrs
+    cidr_blocks = local.fortigate_wan_source_cidrs
   }
 
   egress {
@@ -73,7 +73,7 @@ resource "aws_security_group" "fortigate_wan" {
     protocol    = "udp"
     from_port   = 500
     to_port     = 500
-    cidr_blocks = var.wan_ingress_cidrs
+    cidr_blocks = local.fortigate_wan_source_cidrs
   }
 
   ingress {
@@ -81,7 +81,7 @@ resource "aws_security_group" "fortigate_wan" {
     protocol    = "udp"
     from_port   = 4500
     to_port     = 4500
-    cidr_blocks = var.wan_ingress_cidrs
+    cidr_blocks = local.fortigate_wan_source_cidrs
   }
 
   ingress {
@@ -89,11 +89,68 @@ resource "aws_security_group" "fortigate_wan" {
     protocol    = "50"
     from_port   = 0
     to_port     = 0
-    cidr_blocks = var.wan_ingress_cidrs
+    cidr_blocks = local.fortigate_wan_source_cidrs
   }
 
   ingress {
     description = "ICMP diagnostics"
+    protocol    = "icmp"
+    from_port   = -1
+    to_port     = -1
+    cidr_blocks = local.fortigate_wan_source_cidrs
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.name_prefix}-fgt-wan"
+  }
+}
+
+resource "aws_security_group" "internet_router" {
+  name_prefix = "${var.name_prefix}-internet-router-"
+  description = "Forwarded traffic through the Debian virtual internet gateway"
+  vpc_id      = aws_vpc.lab.id
+
+  ingress {
+    description = "All lab VPC traffic"
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  ingress {
+    description = "Public IKE"
+    protocol    = "udp"
+    from_port   = 500
+    to_port     = 500
+    cidr_blocks = var.wan_ingress_cidrs
+  }
+
+  ingress {
+    description = "Public IPsec NAT traversal"
+    protocol    = "udp"
+    from_port   = 4500
+    to_port     = 4500
+    cidr_blocks = var.wan_ingress_cidrs
+  }
+
+  ingress {
+    description = "Public IPsec ESP"
+    protocol    = "50"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = var.wan_ingress_cidrs
+  }
+
+  ingress {
+    description = "Public ICMP diagnostics"
     protocol    = "icmp"
     from_port   = -1
     to_port     = -1
@@ -108,7 +165,7 @@ resource "aws_security_group" "fortigate_wan" {
   }
 
   tags = {
-    Name = "${var.name_prefix}-fgt-wan"
+    Name = "${var.name_prefix}-internet-router"
   }
 }
 

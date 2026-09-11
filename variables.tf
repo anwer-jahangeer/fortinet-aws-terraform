@@ -1,13 +1,13 @@
 variable "aws_region" {
   description = "AWS region in which to deploy the lab."
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "availability_zone" {
   description = "Availability Zone for all lab subnets and instances."
   type        = string
-  default     = "us-east-1a"
+  default     = "us-east-2a"
 }
 
 variable "name_prefix" {
@@ -33,27 +33,46 @@ variable "vpc_cidr" {
 }
 
 variable "subnet_cidrs" {
-  description = "Subnet address plan for management, site LANs, WAN underlays, and MPLS."
+  description = "Subnet address plan for management, site LANs, six ISP circuits, Debian egress, and MPLS."
   type        = map(string)
   default = {
-    management   = "10.10.252.0/24"
-    hub1_lan     = "10.10.20.0/24"
-    hub2_lan     = "10.10.30.0/24"
-    branch1_lan  = "10.10.10.0/24"
-    hub1_wan2    = "10.10.101.0/24"
-    hub2_wan2    = "10.10.102.0/24"
-    branch1_wan2 = "10.10.103.0/24"
-    mpls         = "10.10.200.0/24"
+    management      = "10.10.252.0/24"
+    hub1_lan        = "10.10.20.0/24"
+    hub2_lan        = "10.10.30.0/24"
+    branch1_lan     = "10.10.10.0/24"
+    hub1_isp1       = "10.10.111.0/24"
+    hub2_isp1       = "10.10.112.0/24"
+    branch1_isp1    = "10.10.113.0/24"
+    hub1_wan2       = "10.10.101.0/24"
+    hub2_wan2       = "10.10.102.0/24"
+    branch1_wan2    = "10.10.103.0/24"
+    internet_egress = "10.10.121.0/24"
+    mpls            = "10.10.200.0/24"
   }
 
   validation {
-    condition     = length(var.subnet_cidrs) == 8
-    error_message = "subnet_cidrs must define management, hub1_lan, hub2_lan, branch1_lan, hub1_wan2, hub2_wan2, branch1_wan2, and mpls."
+    condition = length(var.subnet_cidrs) == 12 && alltrue([
+      for required_key in [
+        "management",
+        "hub1_lan",
+        "hub2_lan",
+        "branch1_lan",
+        "hub1_isp1",
+        "hub2_isp1",
+        "branch1_isp1",
+        "hub1_wan2",
+        "hub2_wan2",
+        "branch1_wan2",
+        "internet_egress",
+        "mpls",
+      ] : contains(keys(var.subnet_cidrs), required_key)
+    ])
+    error_message = "subnet_cidrs must define every management, LAN, ISP1, ISP2, internet_egress, and MPLS subnet."
   }
 }
 
 variable "admin_ingress_cidrs" {
-  description = "Trusted public CIDRs allowed to administer FortiGate, FMG, FAZ, and the jumpbox. Replace the lab default with your public IP/32."
+  description = "Trusted public CIDRs allowed to reach the Windows jumpbox. Replace the lab default with your public IP/32."
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
@@ -90,6 +109,12 @@ variable "fortigate_instance_type" {
   description = "EC2 instance type for each four-interface FortiGate."
   type        = string
   default     = "c5.2xlarge"
+}
+
+variable "internet_router_instance_type" {
+  description = "Debian virtual internet router type. It must support at least seven ENIs."
+  type        = string
+  default     = "c5.4xlarge"
 }
 
 variable "jumpbox_instance_type" {

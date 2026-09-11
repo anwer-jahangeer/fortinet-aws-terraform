@@ -1,5 +1,5 @@
-aws_region        = "us-east-1"
-availability_zone = "us-east-1a"
+aws_region        = "us-east-2"
+availability_zone = "us-east-2a"
 
 # Restrict these to your administrator and VPN-peer public addresses.
 admin_ingress_cidrs = ["203.0.113.10/32"]
