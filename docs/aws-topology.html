@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FortiGate SD-WAN Lab - AWS Topology</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #07111f;
+      --panel: #0d1b2d;
+      --panel-2: #12243a;
+      --line: #5f7897;
+      --text: #ecf4ff;
+      --muted: #9fb1c7;
+      --aws: #ff9900;
+      --forti: #ee3124;
+      --isp1: #38bdf8;
+      --isp2: #fb923c;
+      --mpls: #34d399;
+      --mgmt: #c084fc;
+      --cloud: #60a5fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 20% 0%, #123158 0, transparent 32rem),
+        var(--page);
+      color: var(--text);
+      font: 15px/1.5 Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    header, main {
+      width: min(1680px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    h1, h2 { margin: 0; }
+    h1 { font-size: clamp(24px, 3vw, 42px); }
+    h2 { margin-bottom: 14px; font-size: 20px; }
+    p { margin: 6px 0 0; color: var(--muted); }
+
+    button {
+      border: 1px solid #385474;
+      border-radius: 8px;
+      padding: 9px 14px;
+      background: #142943;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .card {
+      margin-bottom: 20px;
+      overflow: hidden;
+      border: 1px solid #203a59;
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      box-shadow: 0 18px 45px #0008;
+    }
+
+    .diagram {
+      overflow-x: auto;
+      padding: 12px;
+    }
+
+    svg {
+      display: block;
+      min-width: 1180px;
+      width: 100%;
+      height: auto;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 24px;
+      padding: 14px 20px 18px;
+      border-top: 1px solid #203a59;
+      color: var(--muted);
+    }
+
+    .legend span { display: inline-flex; align-items: center; gap: 8px; }
+    .swatch { width: 28px; height: 4px; border-radius: 2px; }
+
+    .details { padding: 20px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #263e5a;
+      text-align: left;
+    }
+
+    th { background: #142943; color: #dbeafe; }
+    tr:last-child td { border-bottom: 0; }
+    code { color: #bae6fd; }
+
+    .note {
+      padding: 14px 16px;
+      border-left: 4px solid var(--aws);
+      background: #ff990015;
+      color: #d9e5f3;
+    }
+
+    @media print {
+      :root { color-scheme: light; }
+      body { background: white; color: #111827; }
+      header, main { max-width: none; padding: 8px; }
+      button { display: none; }
+      .card { border-color: #9ca3af; box-shadow: none; break-inside: avoid; }
+      .details, .legend { color: #111827; }
+      p { color: #374151; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>FortiGate SD-WAN Lab on AWS</h1>
+      <p>Single-VPC, dual-ISP, private MPLS and centralized Debian internet routing</p>
+    </div>
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="diagram">
+        <svg viewBox="0 0 1600 1160" role="img" aria-labelledby="diagram-title diagram-description">
+          <title id="diagram-title">AWS FortiGate SD-WAN lab topology</title>
+          <desc id="diagram-description">
+            Three FortiGate sites use two internet circuits through one Debian router,
+            a shared MPLS subnet, a Windows jumpbox, and dual-homed Ubuntu test hosts.
+          </desc>
+
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>
+            </marker>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity=".45"/>
+            </filter>
+            <style>
+              .box { fill: #12243a; stroke: #385474; stroke-width: 2; filter: url(#shadow); }
+              .site { fill: #0b192a; stroke: #304b69; stroke-width: 2; }
+              .cloud-box { fill: #10294a; stroke: #60a5fa; stroke-width: 2; }
+              .aws-box { fill: #33230b; stroke: #ff9900; stroke-width: 2.5; }
+              .forti-box { fill: #351518; stroke: #ee3124; stroke-width: 2.5; }
+              .linux-box { fill: #17213a; stroke: #93c5fd; stroke-width: 2; }
+              .title { fill: #f8fbff; font: 700 22px "Segoe UI", Arial, sans-serif; }
+              .site-title { fill: #e7f1ff; font: 700 20px "Segoe UI", Arial, sans-serif; }
+              .label { fill: #dbeafe; font: 600 15px "Segoe UI", Arial, sans-serif; }
+              .small { fill: #aabbd0; font: 14px "Segoe UI", Arial, sans-serif; }
+              .tiny { fill: #9fb1c7; font: 12px "Segoe UI", Arial, sans-serif; }
+              .isp1 { fill: none; stroke: #38bdf8; stroke-width: 4; marker-end: url(#arrow); }
+              .isp2 { fill: none; stroke: #fb923c; stroke-width: 4; marker-end: url(#arrow); }
+              .mpls { fill: none; stroke: #34d399; stroke-width: 4; }
+              .mgmt { fill: none; stroke: #c084fc; stroke-width: 3; stroke-dasharray: 10 7; }
+              .internet { fill: none; stroke: #ffb74d; stroke-width: 4; marker-end: url(#arrow); }
+              .cloud { fill: none; stroke: #60a5fa; stroke-width: 3; stroke-dasharray: 9 7; marker-end: url(#arrow); }
+              .lan { fill: none; stroke: #93c5fd; stroke-width: 3; marker-end: url(#arrow); }
+            </style>
+          </defs>
+
+          <!-- External services -->
+          <rect class="cloud-box" x="70" y="30" width="340" height="100" rx="18"/>
+          <text class="title" x="240" y="69" text-anchor="middle">FortiManager Cloud</text>
+          <text class="small" x="240" y="98" text-anchor="middle">FGFM management over TCP/541</text>
+
+          <ellipse class="cloud-box" cx="790" cy="77" rx="160" ry="52"/>
+          <text class="title" x="790" y="70" text-anchor="middle">Internet</text>
+          <text class="small" x="790" y="98" text-anchor="middle">FortiGuard, licensing and overlays</text>
+
+          <rect class="aws-box" x="665" y="157" width="250" height="76" rx="15"/>
+          <text class="title" x="790" y="189" text-anchor="middle">AWS Internet Gateway</text>
+          <text class="small" x="790" y="215" text-anchor="middle">VPC public edge</text>
+          <path class="internet" d="M790 129 L790 157"/>
+          <path class="cloud" d="M410 78 L630 78"/>
+
+          <rect class="cloud-box" x="1210" y="35" width="310" height="92" rx="17"/>
+          <text class="title" x="1365" y="70" text-anchor="middle">Administrator</text>
+          <text class="small" x="1365" y="98" text-anchor="middle">RDP from trusted public /32</text>
+
+          <!-- VPC -->
+          <rect x="35" y="260" width="1530" height="860" rx="28"
+                fill="#071522" stroke="#ff9900" stroke-width="3"/>
+          <text class="title" x="70" y="302">AWS VPC 10.10.0.0/16</text>
+          <text class="small" x="70" y="328">Region us-east-2 | Single Availability Zone lab</text>
+
+          <!-- Debian router -->
+          <rect class="linux-box" x="560" y="290" width="460" height="190" rx="18"/>
+          <text class="title" x="790" y="328" text-anchor="middle">Debian Internet Router</text>
+          <text class="small" x="790" y="355" text-anchor="middle">c5.4xlarge | 7 ENIs | nftables SNAT/DNAT</text>
+          <text class="label" x="585" y="391">Outside ENI: 10.10.121.10 - 10.10.121.15</text>
+          <text class="small" x="585" y="419">Six EIPs, one unique public identity per circuit</text>
+          <text class="small" x="585" y="446">Inside ENIs: one .254 gateway per ISP subnet</text>
+          <path class="internet" d="M790 290 L790 233"/>
+
+          <!-- Jumpbox -->
+          <rect class="box" x="1165" y="300" width="330" height="150" rx="18"/>
+          <text class="title" x="1330" y="337" text-anchor="middle">Windows Jumpbox</text>
+          <text class="small" x="1330" y="367" text-anchor="middle">Management subnet 10.10.252.0/24</text>
+          <text class="small" x="1330" y="394" text-anchor="middle">One EIP for RDP access</text>
+          <text class="small" x="1330" y="421" text-anchor="middle">HTTPS / SSH to private FortiGate IPs</text>
+          <path class="internet" d="M1365 127 L1365 300"/>
+
+          <!-- Management bus -->
+          <path class="mgmt" d="M120 535 L1480 535"/>
+          <text class="label" x="800" y="523" text-anchor="middle">Management network 10.10.252.0/24</text>
+          <path class="mgmt" d="M1330 450 L1330 535"/>
+
+          <!-- Site containers -->
+          <rect class="site" x="65" y="600" width="450" height="455" rx="22"/>
+          <text class="site-title" x="290" y="636" text-anchor="middle">HUB 1</text>
+
+          <rect class="site" x="575" y="600" width="450" height="455" rx="22"/>
+          <text class="site-title" x="800" y="636" text-anchor="middle">HUB 2</text>
+
+          <rect class="site" x="1085" y="600" width="450" height="455" rx="22"/>
+          <text class="site-title" x="1310" y="636" text-anchor="middle">BRANCH 1</text>
+
+          <!-- FortiGates -->
+          <rect class="forti-box" x="100" y="665" width="380" height="210" rx="18"/>
+          <text class="title" x="290" y="701" text-anchor="middle">FortiGate Hub1</text>
+          <text class="small" x="125" y="737">port1 ISP1/Mgmt: 10.10.111.20/24</text>
+          <text class="small" x="125" y="766">port2 LAN: 10.10.20.20/24</text>
+          <text class="small" x="125" y="795">port3 ISP2: 10.10.101.21/24</text>
+          <text class="small" x="125" y="824">port4 MPLS: 10.10.200.21/24</text>
+          <text class="tiny" x="125" y="851">Private WAN ENIs - no direct public IPs</text>
+
+          <rect class="forti-box" x="610" y="665" width="380" height="210" rx="18"/>
+          <text class="title" x="800" y="701" text-anchor="middle">FortiGate Hub2</text>
+          <text class="small" x="635" y="737">port1 ISP1/Mgmt: 10.10.112.20/24</text>
+          <text class="small" x="635" y="766">port2 LAN: 10.10.30.20/24</text>
+          <text class="small" x="635" y="795">port3 ISP2: 10.10.102.21/24</text>
+          <text class="small" x="635" y="824">port4 MPLS: 10.10.200.22/24</text>
+          <text class="tiny" x="635" y="851">Private WAN ENIs - no direct public IPs</text>
+
+          <rect class="forti-box" x="1120" y="665" width="380" height="210" rx="18"/>
+          <text class="title" x="1310" y="701" text-anchor="middle">FortiGate Branch1</text>
+          <text class="small" x="1145" y="737">port1 ISP1/Mgmt: 10.10.113.20/24</text>
+          <text class="small" x="1145" y="766">port2 LAN: 10.10.10.20/24</text>
+          <text class="small" x="1145" y="795">port3 ISP2: 10.10.103.21/24</text>
+          <text class="small" x="1145" y="824">port4 MPLS: 10.10.200.23/24</text>
+          <text class="tiny" x="1145" y="851">Private WAN ENIs - no direct public IPs</text>
+
+          <!-- ISP circuit paths -->
+          <path class="isp1" d="M650 480 C520 520 360 550 290 665"/>
+          <path class="isp2" d="M700 480 C590 545 450 575 390 665"/>
+          <path class="isp1" d="M770 480 L770 665"/>
+          <path class="isp2" d="M830 480 L830 665"/>
+          <path class="isp1" d="M900 480 C1010 545 1165 570 1220 665"/>
+          <path class="isp2" d="M950 480 C1080 520 1260 550 1320 665"/>
+
+          <text class="tiny" x="420" y="548">Hub1 ISP1 .254</text>
+          <text class="tiny" x="480" y="582">Hub1 ISP2 .254</text>
+          <text class="tiny" x="685" y="570">Hub2 ISP1 .254</text>
+          <text class="tiny" x="835" y="570">Hub2 ISP2 .254</text>
+          <text class="tiny" x="1035" y="582">Branch1 ISP1 .254</text>
+          <text class="tiny" x="1125" y="548">Branch1 ISP2 .254</text>
+
+          <!-- Test VMs -->
+          <rect class="box" x="120" y="910" width="340" height="105" rx="15"/>
+          <text class="label" x="290" y="942" text-anchor="middle">Ubuntu Hub1 Test VM</text>
+          <text class="small" x="290" y="971" text-anchor="middle">LAN 10.10.20.6 | Mgmt 10.10.252.31</text>
+          <path class="lan" d="M290 875 L290 910"/>
+
+          <rect class="box" x="630" y="910" width="340" height="105" rx="15"/>
+          <text class="label" x="800" y="942" text-anchor="middle">Ubuntu Hub2 Test VM</text>
+          <text class="small" x="800" y="971" text-anchor="middle">LAN 10.10.30.6 | Mgmt 10.10.252.32</text>
+          <path class="lan" d="M800 875 L800 910"/>
+
+          <rect class="box" x="1140" y="910" width="340" height="105" rx="15"/>
+          <text class="label" x="1310" y="942" text-anchor="middle">Ubuntu Branch1 Test VM</text>
+          <text class="small" x="1310" y="971" text-anchor="middle">LAN 10.10.10.6 | Mgmt 10.10.252.33</text>
+          <path class="lan" d="M1310 875 L1310 910"/>
+
+          <!-- Management links -->
+          <path class="mgmt" d="M190 535 L190 665"/>
+          <path class="mgmt" d="M700 535 L700 665"/>
+          <path class="mgmt" d="M1210 535 L1210 665"/>
+          <path class="mgmt" d="M215 535 L215 910"/>
+          <path class="mgmt" d="M725 535 L725 910"/>
+          <path class="mgmt" d="M1235 535 L1235 910"/>
+
+          <!-- MPLS bus -->
+          <path class="mpls" d="M150 1082 L1450 1082"/>
+          <path class="mpls" d="M365 875 L365 1082"/>
+          <path class="mpls" d="M875 875 L875 1082"/>
+          <path class="mpls" d="M1385 875 L1385 1082"/>
+          <text class="label" x="800" y="1108" text-anchor="middle">Shared private MPLS underlay 10.10.200.0/24</text>
+
+          <!-- Cloud management indication -->
+          <path class="cloud" d="M240 130 C240 210 460 240 560 330"/>
+          <text class="tiny" x="335" y="218">Outbound FGFM through Debian</text>
+        </svg>
+      </div>
+
+      <div class="legend" aria-label="Diagram legend">
+        <span><i class="swatch" style="background:var(--isp1)"></i>ISP1</span>
+        <span><i class="swatch" style="background:var(--isp2)"></i>ISP2</span>
+        <span><i class="swatch" style="background:var(--mpls)"></i>MPLS</span>
+        <span><i class="swatch" style="background:var(--mgmt)"></i>Management</span>
+        <span><i class="swatch" style="background:var(--aws)"></i>Internet path</span>
+        <span><i class="swatch" style="background:var(--cloud)"></i>Cloud management</span>
+      </div>
+    </section>
+
+    <section class="card details">
+      <h2>Debian circuit mapping</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Circuit</th>
+            <th>FortiGate WAN</th>
+            <th>Debian inside ENI</th>
+            <th>Debian outside IP</th>
+            <th>Public identity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Hub1 ISP1</td><td><code>10.10.111.20</code></td><td><code>10.10.111.254</code></td><td><code>10.10.121.10</code></td><td>Dedicated EIP</td></tr>
+          <tr><td>Hub1 ISP2</td><td><code>10.10.101.21</code></td><td><code>10.10.101.254</code></td><td><code>10.10.121.11</code></td><td>Dedicated EIP</td></tr>
+          <tr><td>Hub2 ISP1</td><td><code>10.10.112.20</code></td><td><code>10.10.112.254</code></td><td><code>10.10.121.12</code></td><td>Dedicated EIP</td></tr>
+          <tr><td>Hub2 ISP2</td><td><code>10.10.102.21</code></td><td><code>10.10.102.254</code></td><td><code>10.10.121.13</code></td><td>Dedicated EIP</td></tr>
+          <tr><td>Branch1 ISP1</td><td><code>10.10.113.20</code></td><td><code>10.10.113.254</code></td><td><code>10.10.121.14</code></td><td>Dedicated EIP</td></tr>
+          <tr><td>Branch1 ISP2</td><td><code>10.10.103.21</code></td><td><code>10.10.103.254</code></td><td><code>10.10.121.15</code></td><td>Dedicated EIP</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card details">
+      <h2>Traffic flows</h2>
+      <p><strong>Internet and licensing:</strong> FortiGate WAN -> AWS subnet gateway .1 -> Debian .254 -> SNAT/EIP -> AWS IGW.</p>
+      <p><strong>Management:</strong> Administrator -> jumpbox EIP -> Windows jumpbox -> VPC local route -> FortiGate port1.</p>
+      <p><strong>FortiManager Cloud:</strong> FortiGate -> Debian NAT -> Internet -> FortiManager Cloud on TCP/541.</p>
+      <p><strong>Site traffic:</strong> Ubuntu LAN -> FortiGate -> ISP1, ISP2 or MPLS underlay -> remote FortiGate and LAN.</p>
+      <div class="note">
+        FortiGate WAN ENIs use private addresses only. Public EIPs terminate on
+        Debian, which provides one-to-one circuit NAT and hairpin NAT for lab overlays.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

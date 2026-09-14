@@ -5,6 +5,9 @@ FortiGate branch, two independent internet underlays, a shared private MPLS
 underlay, one LAN per site, a Windows jumpbox, one Ubuntu test host behind each
 firewall, and one Debian virtual internet gateway hosting all six ISP circuits.
 
+Open [`docs/aws-topology.html`](docs/aws-topology.html) in a browser for the
+self-contained interactive topology diagram and print-ready circuit map.
+
 ## AWS topology
 
 AWS requires every ENI attached to an EC2 instance to be in the same VPC.
