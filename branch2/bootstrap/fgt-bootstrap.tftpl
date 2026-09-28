@@ -1,0 +1,41 @@
+config system global
+    set hostname "${hostname}"
+    set admintimeout 480
+end
+config system admin
+    edit "${admin_username}"
+        set password "${admin_password}"
+        set accprofile "super_admin"
+    next
+end
+config system interface
+    edit "port1"
+        set mode dhcp
+        set defaultgw enable
+        set distance 10
+        set allowaccess ping https ssh http fgfm
+        set description "management-isp1-shared-branch1-underlay"
+    next
+    edit "port2"
+        set mode dhcp
+        set defaultgw disable
+        set allowaccess ping
+        set description "branch2-lan"
+    next
+    edit "port3"
+        set mode dhcp
+        set defaultgw enable
+        set distance 20
+        set allowaccess ping
+        set description "isp2-shared-hub2-underlay"
+    next
+end
+config router static
+    edit 100
+        set dst ${management_cidr}
+        set gateway ${port1_gateway}
+        set device "port1"
+        set distance 5
+        set comment "private-management-via-aws-vpc"
+    next
+end

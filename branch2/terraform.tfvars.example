@@ -1,0 +1,11 @@
+aws_region        = "us-east-2"
+availability_zone = "us-east-2a"
+
+admin_password = "REPLACE_ME"
+
+# Use the same subscribed FortiGate BYOL AMI family/version as the main stack.
+fortigate_ami_id = "ami-REPLACE_ME"
+
+# Supports three ENIs, but its two vCPUs may prevent permanent evaluation
+# license activation.
+fortigate_instance_type = "t3.small"
