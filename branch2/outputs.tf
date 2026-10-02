@@ -20,3 +20,12 @@ output "license_validation_commands" {
     "diagnose debug vm-print-license",
   ]
 }
+
+output "inside_host_private_ips" {
+  description = "Branch2 Ubuntu test-host LAN and management addresses."
+  value = {
+    instance_id = aws_instance.inside.id
+    lan         = var.branch2_inside_ip
+    management  = var.branch2_inside_management_ip
+  }
+}

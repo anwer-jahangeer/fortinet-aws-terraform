@@ -9,6 +9,33 @@ data "aws_ec2_instance_type" "fortigate" {
   instance_type = var.fortigate_instance_type
 }
 
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+data "aws_subnet" "management" {
+  filter {
+    name   = "tag:Name"
+    values = ["${var.name_prefix}-management"]
+  }
+}
+
 data "aws_subnet" "branch1_isp1" {
   filter {
     name   = "tag:Name"
@@ -52,6 +79,15 @@ data "aws_security_group" "fortigate_internal" {
   filter {
     name   = "tag:Name"
     values = ["${var.name_prefix}-fgt-internal"]
+  }
+
+  vpc_id = data.aws_vpc.lab.id
+}
+
+data "aws_security_group" "inside_hosts" {
+  filter {
+    name   = "tag:Name"
+    values = ["${var.name_prefix}-inside-hosts"]
   }
 
   vpc_id = data.aws_vpc.lab.id

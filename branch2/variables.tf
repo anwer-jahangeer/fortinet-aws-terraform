@@ -49,6 +49,12 @@ variable "fortigate_instance_type" {
   default     = "c5.2xlarge"
 }
 
+variable "inside_instance_type" {
+  description = "EC2 instance type for the Branch2 Ubuntu test host."
+  type        = string
+  default     = "t3.small"
+}
+
 variable "branch2_lan_cidr" {
   description = "CIDR for the new Branch2 protected LAN."
   type        = string
@@ -77,6 +83,18 @@ variable "branch2_port4_ip" {
   description = "Branch2 port4 address in the existing shared MPLS subnet."
   type        = string
   default     = "10.10.200.24"
+}
+
+variable "branch2_inside_ip" {
+  description = "Branch2 Ubuntu test-host address on the protected LAN."
+  type        = string
+  default     = "10.10.40.6"
+}
+
+variable "branch2_inside_management_ip" {
+  description = "Branch2 Ubuntu test-host address on the management subnet."
+  type        = string
+  default     = "10.10.252.34"
 }
 
 variable "management_cidr" {

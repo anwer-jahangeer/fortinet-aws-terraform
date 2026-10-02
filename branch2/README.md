@@ -10,6 +10,7 @@ The stack manages only:
 - Branch2 LAN subnet and route table
 - Four Branch2 ENIs
 - Branch2 FortiGate instance
+- Branch2 Ubuntu test host with LAN and management ENIs
 - Additive routes between Branch2 and the existing site LANs
 
 It does not manage or modify the Debian EC2 instance, its ENIs, its instance
@@ -36,14 +37,14 @@ cp terraform.tfvars.example terraform.tfvars
 # Set admin_password and the subscribed BYOL fortigate_ami_id.
 
 terraform init
-./scripts/plan-safe.sh branch2.tfplan
+./scripts/plan-safe.sh --replace-fortigate branch2.tfplan
 terraform apply branch2.tfplan
 ```
 
-The safe-plan script requires `jq`, explicitly plans
-`-replace=aws_instance.fortigate`, and refuses to continue unless the old
-Branch2 FortiGate is the only resource being deleted. The Branch2 subnet,
-routes, and existing ENIs are retained; the new MPLS ENI is added.
+The safe-plan script requires `jq`. Pass `--replace-fortigate` only when the
+FortiGate must be replaced; ordinary additions use a normal non-destructive
+plan. It refuses any destructive action other than the explicitly requested
+Branch2 FortiGate replacement.
 
 The replacement instance uses `c5.2xlarge` by default to match Hub1, Hub2, and
 Branch1 and to support four ENIs. Confirm that the genuine FortiGate license
@@ -60,6 +61,23 @@ The stack validates the selected EC2 type through AWS and stops before apply
 when it supports fewer than four ENIs. If an apply already destroyed the old
 VM before failing, rerun `plan-safe.sh`; it detects the missing instance and
 creates the licensed VM without requiring another replacement.
+
+## Branch2 test host
+
+The stack creates an Ubuntu test host matching the existing site pattern:
+
+| Interface | Address | Purpose |
+|---|---:|---|
+| Primary LAN ENI | `10.10.40.6` | Test traffic through Branch2 port2 |
+| Secondary management ENI | `10.10.252.34` | Direct SSH from the jumpbox |
+
+Create it without replacing the FortiGate:
+
+```bash
+./scripts/plan-safe.sh branch2-inside.tfplan
+terraform apply branch2-inside.tfplan
+terraform output inside_host_private_ips
+```
 
 After apply, copy `scripts/configure-debian.sh` to the existing Debian router
 and run it as root:
