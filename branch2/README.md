@@ -49,6 +49,18 @@ The replacement instance uses `c5.2xlarge` by default to match Hub1, Hub2, and
 Branch1 and to support four ENIs. Confirm that the genuine FortiGate license
 entitlement supports the required CPU count before applying.
 
+If `terraform.tfvars` was copied from the evaluation deployment, update its
+explicit override before planning:
+
+```hcl
+fortigate_instance_type = "c5.2xlarge"
+```
+
+The stack validates the selected EC2 type through AWS and stops before apply
+when it supports fewer than four ENIs. If an apply already destroyed the old
+VM before failing, rerun `plan-safe.sh`; it detects the missing instance and
+creates the licensed VM without requiring another replacement.
+
 After apply, copy `scripts/configure-debian.sh` to the existing Debian router
 and run it as root:
 

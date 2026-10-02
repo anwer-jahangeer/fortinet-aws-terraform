@@ -5,6 +5,10 @@ data "aws_vpc" "lab" {
   }
 }
 
+data "aws_ec2_instance_type" "fortigate" {
+  instance_type = var.fortigate_instance_type
+}
+
 data "aws_subnet" "branch1_isp1" {
   filter {
     name   = "tag:Name"

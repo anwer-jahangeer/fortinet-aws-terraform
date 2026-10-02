@@ -87,6 +87,13 @@ resource "aws_instance" "fortigate" {
     device_index         = 3
   }
 
+  lifecycle {
+    precondition {
+      condition     = data.aws_ec2_instance_type.fortigate.maximum_network_interfaces >= 4
+      error_message = "fortigate_instance_type must support at least four network interfaces. Check terraform.tfvars for an old evaluation-size override."
+    }
+  }
+
   tags = {
     Name = "${var.name_prefix}-branch2-fgt"
     Role = "fortigate"
