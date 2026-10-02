@@ -140,12 +140,13 @@ sysctl net.ipv4.ip_forward
 Configure the FortiGate hub-and-spoke SD-WAN overlay directly on the three
 FortiGates: port1 and port3 are internet underlays, and port4 is MPLS.
 
-## Optional Branch2 BYOL evaluation test
+## Licensed Branch2 replacement
 
 The [`branch2`](branch2) directory is an independent Terraform stack with its
 own state. It reads the existing lab through AWS data sources and manages only
-the new Branch2 subnet, routes, ENIs, and FortiGate. Destroying that stack does
-not destroy the original lab or the Debian router.
+the Branch2 subnet, routes, four ENIs, and FortiGate. Its safe-plan script
+intentionally replaces only the prior Branch2 FortiGate VM while retaining the
+Branch2 networking and preserving the original lab and Debian router.
 
 ## FortiManager interface provisioning
 

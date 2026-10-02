@@ -29,6 +29,12 @@ config system interface
         set allowaccess ping
         set description "isp2-shared-hub2-underlay"
     next
+    edit "port4"
+        set mode dhcp
+        set defaultgw disable
+        set allowaccess ping
+        set description "mpls-shared-underlay"
+    next
 end
 config router static
     edit 100

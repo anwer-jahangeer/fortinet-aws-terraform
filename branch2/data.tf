@@ -19,6 +19,13 @@ data "aws_subnet" "hub2_isp2" {
   }
 }
 
+data "aws_subnet" "mpls" {
+  filter {
+    name   = "tag:Name"
+    values = ["${var.name_prefix}-mpls"]
+  }
+}
+
 data "aws_security_group" "fortigate_management" {
   filter {
     name   = "tag:Name"

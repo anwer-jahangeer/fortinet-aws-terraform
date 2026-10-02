@@ -44,9 +44,9 @@ variable "fortigate_ami_id" {
 }
 
 variable "fortigate_instance_type" {
-  description = "Branch2 test instance type. t3.small supports three ENIs but exposes two vCPUs."
+  description = "Licensed Branch2 instance type. It must support at least four ENIs."
   type        = string
-  default     = "t3.small"
+  default     = "c5.2xlarge"
 }
 
 variable "branch2_lan_cidr" {
@@ -71,6 +71,12 @@ variable "branch2_port3_ip" {
   description = "Branch2 port3 address in the existing Hub2 ISP2 subnet."
   type        = string
   default     = "10.10.102.22"
+}
+
+variable "branch2_port4_ip" {
+  description = "Branch2 port4 address in the existing shared MPLS subnet."
+  type        = string
+  default     = "10.10.200.24"
 }
 
 variable "management_cidr" {

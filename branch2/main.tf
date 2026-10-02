@@ -43,6 +43,17 @@ resource "aws_network_interface" "port3" {
   }
 }
 
+resource "aws_network_interface" "port4" {
+  subnet_id         = data.aws_subnet.mpls.id
+  private_ips       = [var.branch2_port4_ip]
+  security_groups   = [data.aws_security_group.fortigate_internal.id]
+  source_dest_check = false
+
+  tags = {
+    Name = "${var.name_prefix}-branch2-fgt-port4-mpls"
+  }
+}
+
 resource "aws_instance" "fortigate" {
   ami           = var.fortigate_ami_id
   instance_type = var.fortigate_instance_type
@@ -69,6 +80,11 @@ resource "aws_instance" "fortigate" {
   network_interface {
     network_interface_id = aws_network_interface.port3.id
     device_index         = 2
+  }
+
+  network_interface {
+    network_interface_id = aws_network_interface.port4.id
+    device_index         = 3
   }
 
   tags = {
