@@ -1,32 +1,42 @@
 #!/bin/bash
 set -euo pipefail
 
-replace_fortigate=false
+mode=normal
 if [[ ${1:-} == "--replace-fortigate" ]]; then
-    replace_fortigate=true
+    mode=replace-fortigate
+    shift
+elif [[ ${1:-} == "--migrate-isps" ]]; then
+    mode=migrate-isps
     shift
 fi
 
 plan_file=${1:-branch2.tfplan}
 
-if $replace_fortigate && terraform state show aws_instance.fortigate >/dev/null 2>&1; then
+if [[ $mode == replace-fortigate ]] && terraform state show aws_instance.fortigate >/dev/null 2>&1; then
     terraform plan -replace=aws_instance.fortigate -out "$plan_file"
 else
-    if $replace_fortigate; then
+    if [[ $mode == replace-fortigate ]]; then
         echo "Branch2 FortiGate is absent from state; planning partial-apply recovery."
     fi
     terraform plan -out "$plan_file"
 fi
 
 if terraform show -json "$plan_file" |
-    jq -e '
+    jq -e --arg mode "$mode" '
       [.resource_changes[]? | select(.change.actions | index("delete"))] as $destructive
-      | ($destructive | length) == 0
-      or (
-        ($destructive | length) == 1
-        and $destructive[0].address == "aws_instance.fortigate"
-        and $destructive[0].change.actions == ["delete", "create"]
-      )
+      | if $mode == "normal" then
+          ($destructive | length) == 0
+        elif $mode == "replace-fortigate" then
+          all($destructive[];
+            .address == "aws_instance.fortigate"
+            and (.change.actions | sort) == ["create", "delete"])
+        else
+          all($destructive[];
+            (.address == "aws_instance.fortigate"
+             or .address == "aws_network_interface.port1"
+             or .address == "aws_network_interface.port3")
+            and (.change.actions | sort) == ["create", "delete"])
+        end
     ' >/dev/null; then
     echo "Safe plan: no unrelated destructive changes were detected."
 else

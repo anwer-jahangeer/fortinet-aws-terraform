@@ -11,7 +11,7 @@ resource "aws_subnet" "lan" {
 }
 
 resource "aws_network_interface" "port1" {
-  subnet_id         = data.aws_subnet.branch1_isp1.id
+  subnet_id         = aws_subnet.isp1.id
   private_ips       = [var.branch2_port1_ip]
   security_groups   = [data.aws_security_group.fortigate_management.id]
   source_dest_check = false
@@ -33,7 +33,7 @@ resource "aws_network_interface" "lan" {
 }
 
 resource "aws_network_interface" "port3" {
-  subnet_id         = data.aws_subnet.hub2_isp2.id
+  subnet_id         = aws_subnet.isp2.id
   private_ips       = [var.branch2_port3_ip]
   security_groups   = [data.aws_security_group.fortigate_wan.id]
   source_dest_check = false
@@ -63,7 +63,7 @@ resource "aws_instance" "fortigate" {
     admin_username  = var.admin_username
     admin_password  = var.admin_password
     management_cidr = var.management_cidr
-    port1_gateway   = cidrhost(data.aws_subnet.branch1_isp1.cidr_block, 1)
+    port1_gateway   = cidrhost(var.branch2_isp1_cidr, 1)
   })
   user_data_replace_on_change = true
 

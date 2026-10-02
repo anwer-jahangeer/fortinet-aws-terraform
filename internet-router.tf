@@ -78,10 +78,12 @@ resource "aws_instance" "internet_router" {
   key_name      = aws_key_pair.lab.key_name
 
   user_data = templatefile("${path.module}/bootstrap/debian-internet-router.tftpl", {
-    vpc_cidr            = var.vpc_cidr
-    outside_gateway     = cidrhost(var.subnet_cidrs["internet_egress"], 1)
-    outside_mac         = aws_network_interface.internet_router_outside.mac_address
-    outside_private_ips = local.internet_router_outside_ips
+    vpc_cidr        = var.vpc_cidr
+    outside_gateway = cidrhost(var.subnet_cidrs["internet_egress"], 1)
+    outside_mac     = aws_network_interface.internet_router_outside.mac_address
+    # Branch2's two additive NAT addresses are configured by its independent
+    # persistent Debian service so this shared instance is not replaced.
+    outside_private_ips = slice(local.internet_router_outside_ips, 0, 6)
     allowed_wan_sources = var.wan_ingress_cidrs
     circuits = {
       for name, circuit in local.internet_circuits : name => merge(circuit, {
@@ -91,6 +93,12 @@ resource "aws_instance" "internet_router" {
     }
   })
   user_data_replace_on_change = true
+
+  lifecycle {
+    # Branch2 attaches the eighth ENI through its independent state. Preserve
+    # that additive attachment during later refreshes of the main stack.
+    ignore_changes = [network_interface]
+  }
 
   network_interface {
     network_interface_id = aws_network_interface.internet_router_outside.id

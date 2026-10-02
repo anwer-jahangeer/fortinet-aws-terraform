@@ -14,7 +14,7 @@ config system interface
         set defaultgw enable
         set distance 10
         set allowaccess ping https ssh http fgfm
-        set description "management-isp1-shared-branch1-underlay"
+        set description "management-and-dedicated-isp1-underlay"
     next
     edit "port2"
         set mode dhcp
@@ -27,7 +27,7 @@ config system interface
         set defaultgw enable
         set distance 20
         set allowaccess ping
-        set description "isp2-shared-hub2-underlay"
+        set description "dedicated-isp2-via-debian-outside-eni"
     next
     edit "port4"
         set mode dhcp

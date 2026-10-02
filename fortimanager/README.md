@@ -1,7 +1,7 @@
 # FortiManager AWS interface template
 
 `aws-interface-template.j2` is a FortiManager 7.6 Jinja CLI template for all
-three AWS FortiGates. It configures the exact four-port AWS address plan and
+four AWS FortiGates. It configures the exact four-port AWS address plan and
 the underlay routes required to preserve FortiManager Cloud connectivity.
 
 ## Metadata variables
@@ -24,14 +24,14 @@ available at the ADOM level and can be assigned from Device Manager.
 
 ## Create and assign the template
 
-1. Open the FortiOS 7.6 ADOM containing the three FortiGates.
+1. Open the FortiOS 7.6 ADOM containing the four FortiGates.
 2. Create the seven device-level metadata variables listed above.
 3. Assign each device's values from `device-metadata.csv`.
 4. Go to **Device Manager > Provisioning Templates > CLI Template**.
 5. Create a template named `AWS-FortiGate-Interfaces`.
 6. Select **Jinja Script** as the template type.
 7. Paste the contents of `aws-interface-template.j2`.
-8. Assign the template to all three AWS FortiGates.
+8. Assign the template to all four AWS FortiGates.
 9. Preview the rendered configuration for each device before installation.
 10. Install first on Branch1, confirm management and internet access, and then
     install on Hub1 and Hub2.
@@ -78,6 +78,7 @@ The expected ISP1 first hops are:
 | Hub1 | `10.10.111.254` |
 | Hub2 | `10.10.112.254` |
 | Branch1 | `10.10.113.254` |
+| Branch2 | `10.10.114.254` |
 
 Reset diagnostic interface selection afterward:
 
@@ -92,4 +93,5 @@ From the Windows jumpbox, confirm HTTPS and SSH access to:
 10.10.111.20
 10.10.112.20
 10.10.113.20
+10.10.114.20
 ```

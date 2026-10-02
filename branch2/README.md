@@ -1,109 +1,158 @@
 # Licensed Branch2 independent Terraform stack
 
-This stack replaces the earlier evaluation Branch2 FortiGate with a licensed
-four-interface FortiGate while keeping the original Terraform state untouched.
-Existing VPC, WAN and MPLS subnets, security groups, key pair, LAN route tables,
-and FortiGate LAN ENIs are read through data sources.
+This stack deploys a licensed four-interface Branch2 FortiGate, a matching
+Ubuntu test host, and two dedicated AWS ISP subnets without changing Hub1,
+Hub2, Branch1, or their public addresses.
 
-The stack manages only:
+## Topology
 
-- Branch2 LAN subnet and route table
-- Four Branch2 ENIs
-- Branch2 FortiGate instance
-- Branch2 Ubuntu test host with LAN and management ENIs
-- Additive routes between Branch2 and the existing site LANs
-
-It does not manage or modify the Debian EC2 instance, its ENIs, its instance
-type, its user data, or the existing FortiGate instances.
-
-## Interface plan
-
-| Port | Address | Segment |
+| Component | Address | Routing path |
 |---|---:|---|
-| port1 | `10.10.113.21` | Existing Branch1 ISP1 |
-| port2 | `10.10.40.20` | New Branch2 LAN |
-| port3 | `10.10.102.22` | Existing Hub2 ISP2 |
-| port4 | `10.10.200.24` | Existing shared MPLS |
+| Branch2 port1 / ISP1 | `10.10.114.20/24` | Dedicated Debian ENI `10.10.114.254` |
+| Branch2 port2 / LAN | `10.10.40.20/24` | Branch2 protected LAN |
+| Branch2 port3 / ISP2 | `10.10.104.21/24` | AWS route table targets Debian ENI 0 |
+| Branch2 port4 / MPLS | `10.10.200.24/24` | Existing private MPLS subnet |
+| Branch2 test VM LAN | `10.10.40.6/24` | Primary interface through port2 |
+| Branch2 test VM management | `10.10.252.34/24` | Secondary interface from jumpbox |
+| ISP1 private NAT address | `10.10.121.16` | Secondary address on Debian ENI 0 |
+| ISP2 private NAT address | `10.10.121.17` | Secondary address on Debian ENI 0 |
 
-Branch2 shares the current Branch1 ISP1 and Hub2 ISP2 Debian NAT identities.
-It should initiate IPsec tunnels; unsolicited IKE/IPsec traffic to those public
-addresses continues to DNAT to the original Branch1 and Hub2 FortiGates.
+Debian currently uses device indexes 0 through 6. Branch2 ISP1 consumes the
+final `c5.4xlarge` attachment slot at device index 7. Branch2 ISP2 has its own
+subnet and route table but targets Debian ENI 0, which remains the shared
+outside interface for every site's internet traffic.
 
-## Replace the evaluation VM safely
+## Prerequisites
+
+1. Back up the current Branch2 FortiGate configuration.
+2. Ensure the genuine FortiGate license can be rehosted to the replacement VM.
+3. Set `admin_password` and `fortigate_ami_id` in `branch2/terraform.tfvars`.
+   Remove any old overrides that still set port1 to `10.10.113.21` or port3
+   to `10.10.102.22`; both addresses must use the new dedicated subnets.
+4. Confirm the selected FortiGate instance type supports four ENIs.
+5. Install `jq` in AWS CloudShell.
+
+## Stage 1: reserve Branch2 NAT addresses
+
+Run this from the repository root using the main Terraform state:
+
+```bash
+git pull origin replace-branch2-with-licensed
+terraform init
+./scripts/plan-branch2-nat-ips-safe.sh branch2-nat-ips.tfplan
+terraform apply branch2-nat-ips.tfplan
+```
+
+The accepted plan updates only
+`aws_network_interface.internet_router_outside`, adding `10.10.121.16` and
+`10.10.121.17`. It must not replace `aws_instance.internet_router`. The main
+instance resource ignores additive network-interface attachments so future
+main-stack refreshes preserve Branch2's eighth Debian ENI.
+
+## Stage 2: migrate Branch2
+
+Run this from the independent Branch2 state:
 
 ```bash
 cd branch2
-cp terraform.tfvars.example terraform.tfvars
-# Set admin_password and the subscribed BYOL fortigate_ami_id.
-
 terraform init
-./scripts/plan-safe.sh --replace-fortigate branch2.tfplan
-terraform apply branch2.tfplan
+./scripts/plan-safe.sh --migrate-isps branch2-isp-migration.tfplan
+terraform apply branch2-isp-migration.tfplan
 ```
 
-The safe-plan script requires `jq`. Pass `--replace-fortigate` only when the
-FortiGate must be replaced; ordinary additions use a normal non-destructive
-plan. It refuses any destructive action other than the explicitly requested
-Branch2 FortiGate replacement.
+Expected destructive actions are limited to:
 
-The replacement instance uses `c5.2xlarge` by default to match Hub1, Hub2, and
-Branch1 and to support four ENIs. Confirm that the genuine FortiGate license
-entitlement supports the required CPU count before applying.
+- `aws_instance.fortigate`
+- `aws_network_interface.port1`
+- `aws_network_interface.port3`
 
-If `terraform.tfvars` was copied from the evaluation deployment, update its
-explicit override before planning:
+The LAN, MPLS ENI, Branch2 test host, Hub1, Hub2, Branch1, Debian EC2 instance,
+and all existing public addresses must remain unchanged.
 
-```hcl
-fortigate_instance_type = "c5.2xlarge"
-```
+The apply creates:
 
-The stack validates the selected EC2 type through AWS and stops before apply
-when it supports fewer than four ENIs. If an apply already destroyed the old
-VM before failing, rerun `plan-safe.sh`; it detects the missing instance and
-creates the licensed VM without requiring another replacement.
+- Dedicated Branch2 ISP1 and ISP2 subnets and route tables
+- Final Debian ENI at device index 7 for ISP1
+- Two new EIPs associated with `.16` and `.17` on Debian ENI 0
+- Internal underlay routes between Branch2 and every existing ISP circuit
+- Replacement Branch2 FortiGate on the new ISP subnets
 
-## Branch2 test host
+## Stage 3: configure Debian
 
-The stack creates an Ubuntu test host matching the existing site pattern:
-
-| Interface | Address | Purpose |
-|---|---:|---|
-| Primary LAN ENI | `10.10.40.6` | Test traffic through Branch2 port2 |
-| Secondary management ENI | `10.10.252.34` | Direct SSH from the jumpbox |
-
-Create it without replacing the FortiGate:
+Display the required MAC addresses:
 
 ```bash
-./scripts/plan-safe.sh branch2-inside.tfplan
-terraform apply branch2-inside.tfplan
-terraform output inside_host_private_ips
+terraform output debian_branch2_configuration
 ```
 
-After apply, copy `scripts/configure-debian.sh` to the existing Debian router
-and run it as root:
+Copy these files to Debian:
+
+```text
+scripts/configure-debian.sh
+scripts/set-branch2-isp2-netem.sh
+scripts/clear-branch2-isp2-netem.sh
+```
+
+On the Debian router, run the configuration script with the two MAC addresses
+from the Terraform output:
 
 ```bash
-sudo bash configure-debian.sh
+sudo bash configure-debian.sh \
+  <isp1_eni_mac> <outside_eni_mac> <isp1_public_ip> <isp2_public_ip>
+sudo install -m 0755 set-branch2-isp2-netem.sh /usr/local/sbin/
+sudo install -m 0755 clear-branch2-isp2-netem.sh /usr/local/sbin/
+```
+
+Validate:
+
+```bash
 sudo systemctl status fortinet-branch2
+ip address show
+ip route show
 sudo nft list set inet filter wan_clients
 sudo nft list table ip branch2_nat
 ```
 
-This installs a separate systemd unit and nftables NAT table. It does not
-rewrite the existing Debian router configuration.
+## Scoped ISP2 impairment
 
-## Install and validate the license
+Do not apply an unfiltered root netem directly to Debian ENI 0 because it is
+shared by all sites. Use the provided helper, which classifies Branch2 ISP2 by
+`10.10.104.21` and `10.10.121.17`:
 
-After the replacement VM boots, upload the genuine `.lic` file to the special
-SCP destination from a trusted Windows host. A successful installation reboots
-the FortiGate:
-
-```powershell
-pscp.exe -scp .\branch2.lic admin@10.10.113.21:vmlicense
+```bash
+sudo set-branch2-isp2-netem.sh delay 100ms 20ms loss 2%
+sudo tc -s qdisc show
+sudo clear-branch2-isp2-netem.sh
 ```
 
-Enable `admin-scp` temporarily before the upload and disable it after license
-installation. Then validate:
+ISP1 uses a dedicated Debian ENI and can be impaired independently with a
+normal interface-level netem rule.
+
+## FortiManager values
+
+| Variable | Value |
+|---|---:|
+| `site_name` | `branch2` |
+| `port1_ip` | `10.10.114.20` |
+| `port1_gateway` | `10.10.114.1` |
+| `port2_ip` | `10.10.40.20` |
+| `port3_ip` | `10.10.104.21` |
+| `port3_gateway` | `10.10.104.1` |
+| `port4_ip` | `10.10.200.24` |
+
+Update Branch2's SD-WAN members, ADVPN templates, BGP router ID/metadata, and
+public tunnel endpoints before installing the policy package.
+
+## License installation
+
+After the replacement VM boots, enable SCP temporarily and upload the rehosted
+license to the new management address:
+
+```powershell
+pscp.exe -scp .\branch2.lic admin@10.10.114.20:vmlicense
+```
+
+Validate after the automatic reboot:
 
 ```text
 get system status
