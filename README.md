@@ -140,6 +140,15 @@ sysctl net.ipv4.ip_forward
 Configure the FortiGate hub-and-spoke SD-WAN overlay directly on the three
 FortiGates: port1 and port3 are internet underlays, and port4 is MPLS.
 
+## Licensed Branch2 with dedicated ISP subnets
+
+The [`branch2`](branch2) directory is an independent Terraform stack with its
+own state. Branch2 uses dedicated `10.10.114.0/24` and `10.10.104.0/24` ISP
+subnets. ISP1 consumes the final available Debian ENI, while ISP2 routes to the
+existing Debian outside ENI. The main stack reserves two additional secondary
+private addresses on that outside ENI without replacing the Debian instance.
+Follow the staged deployment and safety checks in [`branch2/README.md`](branch2/README.md).
+
 ## FortiManager interface provisioning
 
 The `fortimanager` directory contains one reusable FortiManager 7.6 Jinja CLI

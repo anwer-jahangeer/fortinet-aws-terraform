@@ -1,0 +1,10 @@
+aws_region        = "us-east-2"
+availability_zone = "us-east-2a"
+
+admin_password = "REPLACE_ME"
+
+# Use the same subscribed FortiGate BYOL AMI family/version as the main stack.
+fortigate_ami_id = "ami-REPLACE_ME"
+
+# Match the existing Hub1, Hub2, and Branch1 FortiGate instance size.
+fortigate_instance_type = "c5.2xlarge"
