@@ -52,7 +52,8 @@ main-stack refreshes preserve Branch2's eighth Debian ENI.
 Stage 1 intentionally uses Terraform `-target` because the deployed main stack
 contains unrelated AMI and manually managed drift. The safety script still
 parses the saved plan and rejects every resource change except the in-place
-outside-ENI update.
+outside-ENI update. The shared Debian security group preserves its additional
+manually managed SSH and trusted-management ingress rules.
 
 ## Stage 2: migrate Branch2
 

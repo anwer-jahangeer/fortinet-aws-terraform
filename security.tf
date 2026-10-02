@@ -117,6 +117,12 @@ resource "aws_security_group" "internet_router" {
   description = "Forwarded traffic through the Debian virtual internet gateway"
   vpc_id      = aws_vpc.lab.id
 
+  lifecycle {
+    # The deployed lab has additional operational SSH and trusted-management
+    # rules. Preserve those manual rules when the ENI is targeted for update.
+    ignore_changes = [ingress]
+  }
+
   ingress {
     description = "All lab VPC traffic"
     protocol    = "-1"
