@@ -115,7 +115,7 @@ Validate:
 sudo systemctl status fortinet-branch2
 ip address show
 ip route show
-sudo nft list set inet filter wan_clients
+sudo nft -a list chain inet filter forward
 sudo nft list table ip branch2_nat
 ```
 

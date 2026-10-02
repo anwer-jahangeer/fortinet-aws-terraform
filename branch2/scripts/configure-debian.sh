@@ -49,24 +49,24 @@ ip route replace 10.10.104.0/24 via 10.10.121.1 dev "$outside_interface"
 sysctl -w "net.ipv4.conf.$isp1_interface.rp_filter=0" >/dev/null
 sysctl -w "net.ipv4.conf.$outside_interface.rp_filter=0" >/dev/null
 
-if ! nft list set inet filter wan_clients >/dev/null 2>&1; then
-    echo "The base fortinet-internet-router nftables configuration is not loaded." >&2
+if ! nft list chain inet filter forward >/dev/null 2>&1; then
+    echo "The base inet filter forward chain is not loaded." >&2
     exit 1
 fi
-
-nft add element inet filter wan_clients '{ 10.10.114.20, 10.10.104.21 }' 2>/dev/null || true
-nft delete element inet filter wan_clients '{ 10.10.113.21, 10.10.102.22 }' 2>/dev/null || true
 
 while read -r handle; do
     [ -n "$handle" ] && nft delete rule inet filter forward handle "$handle"
 done < <(
     nft -a list chain inet filter forward |
-        awk '/comment "branch2-underlay"/ {for (i=1; i<=NF; i++) if ($i=="handle") print $(i+1)}'
+        awk '/comment "branch2-forward"/ {for (i=1; i<=NF; i++) if ($i=="handle") print $(i+1)}'
 )
 
 nft insert rule inet filter forward \
-    ip saddr @wan_clients ip daddr @wan_clients \
-    accept comment '"branch2-underlay"'
+    ip saddr '{ 10.10.114.20, 10.10.104.21 }' \
+    accept comment '"branch2-forward"'
+nft insert rule inet filter forward \
+    ip daddr '{ 10.10.114.20, 10.10.104.21 }' \
+    accept comment '"branch2-forward"'
 
 nft delete table ip branch2_nat 2>/dev/null || true
 nft -f - <<NFTABLES
