@@ -115,13 +115,18 @@ resource "aws_route" "isp1_to_isp2" {
   destination_cidr_block = var.branch2_isp2_cidr
   network_interface_id   = aws_network_interface.internet_router_isp1.id
 
-  depends_on = [aws_network_interface_attachment.internet_router_isp1]
+  depends_on = [
+    aws_network_interface_attachment.internet_router_isp1,
+    aws_subnet.isp2,
+  ]
 }
 
 resource "aws_route" "isp2_to_isp1" {
   route_table_id         = aws_route_table.isp2.id
   destination_cidr_block = var.branch2_isp1_cidr
   network_interface_id   = data.aws_network_interface.internet_router_outside.id
+
+  depends_on = [aws_subnet.isp1]
 }
 
 resource "aws_route" "existing_circuits_to_branch2_isp1" {
@@ -130,6 +135,8 @@ resource "aws_route" "existing_circuits_to_branch2_isp1" {
   route_table_id         = data.aws_route_table.existing_isp[each.key].id
   destination_cidr_block = var.branch2_isp1_cidr
   network_interface_id   = data.aws_network_interface.existing_internet_router[each.key].id
+
+  depends_on = [aws_subnet.isp1]
 }
 
 resource "aws_route" "existing_circuits_to_branch2_isp2" {
@@ -138,6 +145,8 @@ resource "aws_route" "existing_circuits_to_branch2_isp2" {
   route_table_id         = data.aws_route_table.existing_isp[each.key].id
   destination_cidr_block = var.branch2_isp2_cidr
   network_interface_id   = data.aws_network_interface.existing_internet_router[each.key].id
+
+  depends_on = [aws_subnet.isp2]
 }
 
 resource "aws_eip" "branch2_isp1" {
