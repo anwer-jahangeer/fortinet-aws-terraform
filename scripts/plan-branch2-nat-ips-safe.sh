@@ -3,7 +3,11 @@ set -euo pipefail
 
 plan_file=${1:-branch2-nat-ips.tfplan}
 
-terraform plan -out "$plan_file"
+# The deployed main stack contains unrelated AMI and manually managed drift.
+# Targeting is intentional here so Stage 1 can only extend the existing ENI.
+terraform plan \
+    -target=aws_network_interface.internet_router_outside \
+    -out "$plan_file"
 
 if terraform show -json "$plan_file" |
     jq -e '

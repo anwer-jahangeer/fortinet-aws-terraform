@@ -49,6 +49,11 @@ The accepted plan updates only
 instance resource ignores additive network-interface attachments so future
 main-stack refreshes preserve Branch2's eighth Debian ENI.
 
+Stage 1 intentionally uses Terraform `-target` because the deployed main stack
+contains unrelated AMI and manually managed drift. The safety script still
+parses the saved plan and rejects every resource change except the in-place
+outside-ENI update.
+
 ## Stage 2: migrate Branch2
 
 Run this from the independent Branch2 state:
