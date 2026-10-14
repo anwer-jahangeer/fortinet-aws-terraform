@@ -1,9 +1,11 @@
 # FortiGate SD-WAN Lab on AWS
 
-This Terraform stack recreates the GCP lab on AWS: two FortiGate hubs, one
-FortiGate branch, two independent internet underlays, a shared private MPLS
+This repository recreates the GCP lab on AWS: two FortiGate hubs, two
+FortiGate branches, two independent internet underlays, a shared private MPLS
 underlay, one LAN per site, a Windows jumpbox, one Ubuntu test host behind each
-firewall, and one Debian virtual internet gateway hosting all six ISP circuits.
+firewall, and one Debian virtual internet gateway hosting all eight ISP
+circuits. The original three-site deployment and the licensed Branch2 stack
+use separate Terraform states.
 
 Open [`docs/aws-topology.html`](docs/aws-topology.html) in a browser for the
 self-contained interactive topology diagram and print-ready circuit map.
@@ -20,13 +22,16 @@ and route tables within one `10.10.0.0/16` VPC.
 | hub1 LAN | `10.10.20.0/24` | Hub 1 protected network |
 | hub2 LAN | `10.10.30.0/24` | Hub 2 protected network |
 | branch1 LAN | `10.10.10.0/24` | Branch 1 protected network |
+| branch2 LAN | `10.10.40.0/24` | Branch 2 protected network |
 | hub1 ISP1 | `10.10.111.0/24` | Hub 1 port1 and Debian |
 | hub2 ISP1 | `10.10.112.0/24` | Hub 2 port1 and Debian |
 | branch1 ISP1 | `10.10.113.0/24` | Branch 1 port1 and Debian |
+| branch2 ISP1 | `10.10.114.0/24` | Branch 2 port1 and final Debian inside ENI |
 | hub1 ISP2 | `10.10.101.0/24` | Hub 1 second internet underlay |
 | hub2 ISP2 | `10.10.102.0/24` | Hub 2 second internet underlay |
 | branch1 ISP2 | `10.10.103.0/24` | Branch 1 second internet underlay |
-| internet egress | `10.10.121.0/24` | Debian outside ENI and six EIPs |
+| branch2 ISP2 | `10.10.104.0/24` | Branch 2 second internet underlay routed to the Debian outside ENI |
+| internet egress | `10.10.121.0/24` | Debian outside ENI and eight EIPs |
 | MPLS | `10.10.200.0/24` | Shared private transport |
 
 Each FortiGate has four ENIs in FortiOS order:
@@ -38,11 +43,11 @@ Each FortiGate has four ENIs in FortiOS order:
 | port3 | site ISP2 | Second private internet path |
 | port4 | MPLS | Shared private underlay |
 
-FortiGate WAN ENIs have no public IPs. Their default routes target one of six
-inside ENIs on the Debian router. Debian performs persistent `nftables`
+FortiGate WAN ENIs have no public IPs. Their internet routes ultimately target
+the Debian router. Debian performs persistent `nftables`
 SNAT/DNAT and sends internet traffic from its outside ENI through the AWS
-Internet Gateway. The six existing EIPs are preserved and reassociated with
-six private addresses on that outside ENI.
+Internet Gateway. Eight EIPs are associated with eight private NAT addresses
+on that outside ENI.
 
 | Circuit | FortiGate IP | Debian inside IP | Debian outside IP |
 |---|---:|---:|---:|
@@ -52,6 +57,8 @@ six private addresses on that outside ENI.
 | Hub2 ISP2 | `10.10.102.21` | `10.10.102.254` | `10.10.121.13` |
 | Branch1 ISP1 | `10.10.113.20` | `10.10.113.254` | `10.10.121.14` |
 | Branch1 ISP2 | `10.10.103.21` | `10.10.103.254` | `10.10.121.15` |
+| Branch2 ISP1 | `10.10.114.20` | `10.10.114.254` | `10.10.121.16` |
+| Branch2 ISP2 | `10.10.104.21` | Shared outside ENI route target | `10.10.121.17` |
 
 Each Ubuntu test VM has two ENIs:
 
@@ -60,6 +67,7 @@ Each Ubuntu test VM has two ENIs:
 | hub1 inside | `10.10.20.6` | `10.10.252.31` |
 | hub2 inside | `10.10.30.6` | `10.10.252.32` |
 | branch1 inside | `10.10.10.6` | `10.10.252.33` |
+| branch2 inside | `10.10.40.6` | `10.10.252.34` |
 
 The LAN ENI remains the primary interface so application and SD-WAN test
 traffic follows the local FortiGate. Use the secondary management address to
@@ -68,7 +76,7 @@ SSH directly from the Windows jumpbox without crossing a FortiGate.
 Source/destination checks are disabled on all FortiGate ENIs. Each LAN route
 table sends `0.0.0.0/0` to its local FortiGate port2 ENI. Only the management
 and Debian internet-egress subnets route directly to the AWS Internet Gateway;
-all six ISP subnets route through Debian, and MPLS has no internet default.
+all ISP subnets route through Debian, and MPLS has no internet default.
 More-specific routes for the other site LANs also point to the local FortiGate,
 overriding the VPC's implicit `/16` local route so inter-site test traffic
 cannot bypass the SD-WAN overlay.
